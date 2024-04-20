@@ -43,13 +43,26 @@ class YouTubeDownloader:
         try:
             video = YouTube(url)
             stream = video.streams.filter(only_audio=True).first()
+            if stream is None:
+                messagebox.showerror("Error", "No audio stream found!")
+                return
             downloaded_file = stream.download(output_path)
-            # Convert MP4 to MP3
-            video_clip = AudioFileClip(downloaded_file)
+            
+            if not os.path.exists(downloaded_file):
+                messagebox.showerror("Error", "Downloaded file does not exist!")
+                return
+
+            try:
+                video_clip = AudioFileClip(downloaded_file)
+            except Exception as e:
+                messagebox.showerror("Error", "Failed to load video file: " + str(e))
+                os.remove(downloaded_file)  # Remove the downloaded MP4 file if conversion fails
+                return
+            
             mp3_file = downloaded_file.replace('.mp4', '.mp3')
             video_clip.write_audiofile(mp3_file)
             video_clip.close()
-            os.remove(downloaded_file)  # MP4 dosyasını sil
+            os.remove(downloaded_file)  # Delete the MP4 file
             messagebox.showinfo("Success", "MP3 downloaded successfully!")
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -58,7 +71,7 @@ class YouTubeDownloader:
             self.download_button.config(state=tk.NORMAL)  # Re-enable the download button
 
     def validate_url(self, url):
-        # Regex to check if the URL is a valid YouTube URL
+        # Validate the YouTube URL using regex
         import re
         youtube_regex = (
             r'(https?://)?(www\.)?'
